@@ -1,0 +1,58 @@
+import numpy as np
+import cv2
+from matplotlib import pyplot as plt
+from pysteg import dct
+
+def imageShow(img, title="Image"):
+    plt.figure(figsize=(15, 15))
+    plt.imshow(img, cmap='gray')
+    plt.title(title)
+    plt.xticks([]), plt.yticks([])
+    plt.show()
+
+def selectQMatrix(qName):
+    Quality_10 = np.ones((8, 8)) * 10
+    Quality_50 = np.ones((8, 8)) * 50
+    Quality_90 = np.ones((8, 8)) * 90
+    if qName == "10 percent":
+        return Quality_10
+    elif qName == "50 percent":
+        return Quality_50
+    elif qName == "90 percent":
+        return Quality_90
+    return np.ones((8, 8))
+
+OurImage = 'dog.jpg'
+img = cv2.imread(OurImage, 0)
+imageShow(img, "Original Image")
+
+h, w = img.shape
+block_size = 8
+
+# DCT
+Dct = dct.forward(img, block_size)
+imageShow(dct.inverse(Dct, block_size), "DCT Compressed Image")
+
+# Читаем скрытое сообщение
+with open("testFile.txt", "r") as file:
+    secret_msg = file.read()
+
+# Внедрение сообщения
+encoded_Dct = dct.embed(Dct, secret_msg)
+stego_img = dct.inverse(encoded_Dct, block_size)
+imageShow(stego_img, "Image with Hidden Message")
+
+# Извлечение сообщения
+extracted_msg = dct.extract(encoded_Dct)
+print("Extracted Message:", extracted_msg)
+
+# Визуализация последнего бита
+def Last_1_bit(f_img):
+    return (f_img % 2) * 255
+
+f, axarr = plt.subplots(1, 2, figsize=(20, 20))
+axarr[0].imshow(Last_1_bit(img), cmap='gray')
+axarr[0].title.set_text("Original Image Last Bit")
+axarr[1].imshow(Last_1_bit(stego_img), cmap='gray')
+axarr[1].title.set_text("Steganographed Image Last Bit")
+plt.show()
